@@ -314,10 +314,13 @@ JSON: {"type":"todo|mensaje|gasto|ingreso|idea","text":"descripcion limpia","pro
   parts.push({text: sys+'\n\nInput: '+(txt||'Analiza este recibo y categorízalo como gasto.')});
 
   try{
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}]})});
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}],generationConfig:{temperature:0.1}})});
     const data=await res.json();
+    console.log('Gemini raw response:', JSON.stringify(data));
+    if(data.error){showToast('API error: '+data.error.message);return;}
     const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    let p;try{const jm=raw.match(/\{[\s\S]*\}/);const js=jm?jm[0]:raw.replace(/```json|```/g,'').trim();p=JSON.parse(js);}catch(e){showToast('Error al clasificar, intenta de nuevo.');return;}
+    console.log('Raw text:', raw);
+    let p;try{const jm=raw.match(/\{[\s\S]*\}/);const js=jm?jm[0]:raw.replace(/```json|```/g,'').trim();p=JSON.parse(js);}catch(e){console.log('Parse error:',e,raw);showToast('Error al clasificar: '+raw.slice(0,60));return;}
     addItem(p,curImgB64);
     document.getElementById('captureInput').value='';removeImg();
     showToast(tmsg(p));
